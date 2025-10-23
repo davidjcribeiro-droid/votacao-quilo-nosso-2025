@@ -1,63 +1,109 @@
+import { supabase } from './supabase.js'
+
 class AdminDataService {
   // PRATOS
-  getPratos() {
+  async getPratos() {
     try {
-      const pratos = localStorage.getItem('pratos')
-      return pratos ? JSON.parse(pratos) : []
+      const { data, error } = await supabase
+        .from('pratos')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Erro ao buscar pratos:', error)
+        return []
+      }
+      
+      return data || []
     } catch (error) {
       console.error('Erro ao carregar pratos:', error)
       return []
     }
   }
 
-  getPrato(id) {
-    const pratos = this.getPratos()
-    return pratos.find(p => p.id === parseInt(id))
-  }
-
-  addPrato(pratoData) {
+  async getPrato(id) {
     try {
-      const pratos = this.getPratos()
-      const novoId = Math.max(0, ...pratos.map(p => p.id)) + 1
-      const novoPrato = { 
-        ...pratoData, 
-        id: novoId, 
-        created_at: new Date().toISOString() 
+      const { data, error } = await supabase
+        .from('pratos')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (error) {
+        console.error('Erro ao buscar prato:', error)
+        return null
       }
       
-      pratos.push(novoPrato)
-      localStorage.setItem('pratos', JSON.stringify(pratos))
+      return data
+    } catch (error) {
+      console.error('Erro ao carregar prato:', error)
+      return null
+    }
+  }
+
+  async addPrato(pratoData) {
+    try {
+      const { data, error } = await supabase
+        .from('pratos')
+        .insert([{
+          nome: pratoData.nome,
+          restaurante: pratoData.restaurante,
+          descricao: pratoData.descricao,
+          chef: pratoData.chef,
+          estado: pratoData.estado,
+          categoria: pratoData.categoria || 'Prato Principal',
+          tempo: pratoData.tempo || '60 min',
+          porcoes: pratoData.porcoes || '4-6 pessoas',
+          imagem: pratoData.imagem || '/images/pratos/default.jpg'
+        }])
+        .select()
+        .single()
       
-      return novoPrato
+      if (error) {
+        console.error('Erro ao adicionar prato:', error)
+        return null
+      }
+      
+      return data
     } catch (error) {
       console.error('Erro ao adicionar prato:', error)
       return null
     }
   }
 
-  updatePrato(id, pratoData) {
+  async updatePrato(id, pratoData) {
     try {
-      const pratos = this.getPratos()
-      const index = pratos.findIndex(p => p.id === parseInt(id))
+      const { data, error } = await supabase
+        .from('pratos')
+        .update(pratoData)
+        .eq('id', id)
+        .select()
+        .single()
       
-      if (index >= 0) {
-        pratos[index] = { ...pratos[index], ...pratoData }
-        localStorage.setItem('pratos', JSON.stringify(pratos))
-        return pratos[index]
+      if (error) {
+        console.error('Erro ao atualizar prato:', error)
+        return null
       }
       
-      return null
+      return data
     } catch (error) {
       console.error('Erro ao atualizar prato:', error)
       return null
     }
   }
 
-  deletePrato(id) {
+  async deletePrato(id) {
     try {
-      const pratos = this.getPratos()
-      const pratosAtualizados = pratos.filter(p => p.id !== parseInt(id))
-      localStorage.setItem('pratos', JSON.stringify(pratosAtualizados))
+      const { error } = await supabase
+        .from('pratos')
+        .delete()
+        .eq('id', id)
+      
+      if (error) {
+        console.error('Erro ao deletar prato:', error)
+        return false
+      }
+      
       return true
     } catch (error) {
       console.error('Erro ao deletar prato:', error)
@@ -66,127 +112,214 @@ class AdminDataService {
   }
 
   // JURADOS
-  getJurados() {
+  async getJurados() {
     try {
-      const jurados = localStorage.getItem('jurados')
-      return jurados ? JSON.parse(jurados) : []
+      const { data, error } = await supabase
+        .from('jurados')
+        .select('*')
+        .eq('ativo', true)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Erro ao buscar jurados:', error)
+        return []
+      }
+      
+      return data || []
     } catch (error) {
       console.error('Erro ao carregar jurados:', error)
       return []
     }
   }
 
-  getJurado(id) {
-    const jurados = this.getJurados()
-    return jurados.find(j => j.id === parseInt(id))
-  }
-
-  addJurado(juradoData) {
+  async getJurado(id) {
     try {
-      const jurados = this.getJurados()
-      const novoId = Math.max(0, ...jurados.map(j => j.id)) + 1
-      const novoJurado = { 
-        ...juradoData, 
-        id: novoId, 
-        ativo: true,
-        created_at: new Date().toISOString() 
+      const { data, error } = await supabase
+        .from('jurados')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (error) {
+        console.error('Erro ao buscar jurado:', error)
+        return null
       }
       
-      jurados.push(novoJurado)
-      localStorage.setItem('jurados', JSON.stringify(jurados))
+      return data
+    } catch (error) {
+      console.error('Erro ao carregar jurado:', error)
+      return null
+    }
+  }
+
+  async addJurado(juradoData) {
+    try {
+      const { data, error } = await supabase
+        .from('jurados')
+        .insert([{
+          nome: juradoData.nome,
+          email: juradoData.email,
+          especialidade: juradoData.especialidade,
+          ativo: true
+        }])
+        .select()
+        .single()
       
-      return novoJurado
+      if (error) {
+        console.error('Erro ao adicionar jurado:', error)
+        return null
+      }
+      
+      return data
     } catch (error) {
       console.error('Erro ao adicionar jurado:', error)
       return null
     }
   }
 
-  updateJurado(id, juradoData) {
+  async updateJurado(id, juradoData) {
     try {
-      const jurados = this.getJurados()
-      const index = jurados.findIndex(j => j.id === parseInt(id))
+      const { data, error } = await supabase
+        .from('jurados')
+        .update(juradoData)
+        .eq('id', id)
+        .select()
+        .single()
       
-      if (index >= 0) {
-        jurados[index] = { ...jurados[index], ...juradoData }
-        localStorage.setItem('jurados', JSON.stringify(jurados))
-        return jurados[index]
+      if (error) {
+        console.error('Erro ao atualizar jurado:', error)
+        return null
       }
       
-      return null
+      return data
     } catch (error) {
       console.error('Erro ao atualizar jurado:', error)
       return null
     }
   }
 
-  deleteJurado(id) {
+  async deleteJurado(id) {
     try {
-      const jurados = this.getJurados()
-      const juradosAtualizados = jurados.filter(j => j.id !== parseInt(id))
-      localStorage.setItem('jurados', JSON.stringify(juradosAtualizados))
+      // Marcar como inativo em vez de deletar
+      const { error } = await supabase
+        .from('jurados')
+        .update({ ativo: false })
+        .eq('id', id)
       
-      // Limpar votações do jurado
-      localStorage.removeItem(`votacoes_jurado_${id}`)
+      if (error) {
+        console.error('Erro ao desativar jurado:', error)
+        return false
+      }
       
       return true
     } catch (error) {
-      console.error('Erro ao deletar jurado:', error)
+      console.error('Erro ao desativar jurado:', error)
       return false
     }
   }
 
   // AVALIAÇÕES
-  getAvaliacoes() {
+  async getAvaliacoes() {
     try {
-      const avaliacoes = localStorage.getItem('avaliacoes')
-      return avaliacoes ? JSON.parse(avaliacoes) : []
+      const { data, error } = await supabase
+        .from('avaliacoes')
+        .select(`
+          *,
+          pratos(nome, restaurante),
+          jurados(nome)
+        `)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Erro ao buscar avaliações:', error)
+        return []
+      }
+      
+      return data || []
     } catch (error) {
       console.error('Erro ao carregar avaliações:', error)
       return []
     }
   }
 
-  addAvaliacao(avaliacaoData) {
+  async addAvaliacao(avaliacaoData) {
     try {
-      const avaliacoes = this.getAvaliacoes()
-      
-      // Verificar se já existe
-      const index = avaliacoes.findIndex(a => 
-        a.jurado_id === avaliacaoData.jurado_id && a.prato_id === avaliacaoData.prato_id
-      )
+      // Verificar se já existe avaliação deste jurado para este prato
+      const { data: existing } = await supabase
+        .from('avaliacoes')
+        .select('id')
+        .eq('jurado_id', avaliacaoData.jurado_id)
+        .eq('prato_id', avaliacaoData.prato_id)
+        .single()
 
-      if (index >= 0) {
+      if (existing) {
         // Atualizar existente
-        avaliacoes[index] = { ...avaliacoes[index], ...avaliacaoData }
-      } else {
-        // Adicionar nova
-        avaliacoes.push({
-          ...avaliacaoData,
-          id: `${avaliacaoData.jurado_id}_${avaliacaoData.prato_id}`,
-          created_at: new Date().toISOString()
-        })
-      }
+        const { data, error } = await supabase
+          .from('avaliacoes')
+          .update({
+            originalidade: avaliacaoData.originalidade,
+            receita: avaliacaoData.receita,
+            apresentacao: avaliacaoData.apresentacao,
+            harmonia: avaliacaoData.harmonia,
+            sabor: avaliacaoData.sabor,
+            adequacao: avaliacaoData.adequacao,
+            completa: true
+          })
+          .eq('id', existing.id)
+          .select()
+          .single()
 
-      localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes))
-      return avaliacaoData
+        if (error) {
+          console.error('Erro ao atualizar avaliação:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Criar nova
+        const { data, error } = await supabase
+          .from('avaliacoes')
+          .insert([{
+            jurado_id: avaliacaoData.jurado_id,
+            prato_id: avaliacaoData.prato_id,
+            jurado_nome: avaliacaoData.jurado_nome,
+            originalidade: avaliacaoData.originalidade,
+            receita: avaliacaoData.receita,
+            apresentacao: avaliacaoData.apresentacao,
+            harmonia: avaliacaoData.harmonia,
+            sabor: avaliacaoData.sabor,
+            adequacao: avaliacaoData.adequacao,
+            completa: true
+          }])
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Erro ao adicionar avaliação:', error)
+          return null
+        }
+
+        return data
+      }
     } catch (error) {
-      console.error('Erro ao adicionar avaliação:', error)
+      console.error('Erro ao salvar avaliação:', error)
       return null
     }
   }
 
   // ESTATÍSTICAS
-  getEstatisticas() {
+  async getEstatisticas() {
     try {
-      const pratos = this.getPratos()
-      const jurados = this.getJurados()
-      const avaliacoes = this.getAvaliacoes()
+      const [pratosResult, juradosResult, avaliacoesResult] = await Promise.all([
+        supabase.from('pratos').select('id'),
+        supabase.from('jurados').select('id').eq('ativo', true),
+        supabase.from('avaliacoes').select('id').eq('completa', true)
+      ])
       
       return {
-        totalPratos: pratos.length,
-        totalJurados: jurados.filter(j => j.ativo !== false).length,
-        totalAvaliacoes: avaliacoes.length,
+        totalPratos: pratosResult.data?.length || 0,
+        totalJurados: juradosResult.data?.length || 0,
+        totalAvaliacoes: avaliacoesResult.data?.length || 0,
         ultimaAtualizacao: new Date().toISOString()
       }
     } catch (error) {
@@ -201,11 +334,13 @@ class AdminDataService {
   }
 
   // RANKINGS
-  getRankings() {
+  async getRankings() {
     try {
-      const pratos = this.getPratos()
-      const jurados = this.getJurados()
-      const avaliacoes = this.getAvaliacoes()
+      const [pratos, jurados, avaliacoes] = await Promise.all([
+        this.getPratos(),
+        this.getJurados(),
+        this.getAvaliacoes()
+      ])
 
       const criterios = [
         { id: 'originalidade', peso: 2 },
@@ -245,7 +380,7 @@ class AdminDataService {
           
           const jurado = jurados.find(j => j.id === avaliacao.jurado_id)
           detalhesJurados.push({
-            jurado: jurado ? jurado.nome : 'Desconhecido',
+            jurado: jurado ? jurado.nome : avaliacao.jurado_nome || 'Desconhecido',
             pontos: pontosAvaliacao,
             percentual: (pontosAvaliacao / (pesoTotal * 5)) * 100
           })

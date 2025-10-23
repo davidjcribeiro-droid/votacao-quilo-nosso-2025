@@ -12,8 +12,11 @@ const IdentificacaoJurado = ({ onNext }) => {
 
   useEffect(() => {
     // Carregar jurados do AdminDataService
-    const juradosCarregados = adminDataService.getJurados()
-    setJurados(juradosCarregados)
+    const carregarJurados = async () => {
+      const juradosCarregados = await adminDataService.getJurados()
+      setJurados(juradosCarregados)
+    }
+    carregarJurados()
   }, [])
 
   const handleJuradoChange = (value) => {

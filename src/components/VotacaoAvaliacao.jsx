@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { ArrowLeft, Star, Send, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react'
-import dataManager from '../services/DataManager.js'
+import adminDataService from '../services/AdminDataService.js'
 
 const VotacaoAvaliacao = ({ dadosJurado, pratoSelecionado, onNext, onBack }) => {
   const [avaliacao, setAvaliacao] = useState({
@@ -180,7 +180,7 @@ const VotacaoAvaliacao = ({ dadosJurado, pratoSelecionado, onNext, onBack }) => 
     )
   }
 
-  const handleEnviarCriterio = (criterio) => {
+  const handleEnviarCriterio = async (criterio) => {
     if (avaliacao[criterio.key] === 0) {
       alert('Por favor, selecione uma nota antes de enviar.')
       return
@@ -229,7 +229,7 @@ const VotacaoAvaliacao = ({ dadosJurado, pratoSelecionado, onNext, onBack }) => 
       [criterio.key]: true
     }))
 
-    // Salvar avaliação completa usando DataManager
+    // Salvar avaliação completa usando Supabase
     if (todosPreenchidos) {
       const avaliacaoCompleta = {
         prato_id: pratoSelecionado.id,
@@ -244,10 +244,14 @@ const VotacaoAvaliacao = ({ dadosJurado, pratoSelecionado, onNext, onBack }) => 
         completa: true
       }
 
-      // Usar DataManager para sincronização automática
-      dataManager.addAvaliacao(avaliacaoCompleta)
-      
-      alert('Prato completamente avaliado! Todos os critérios foram enviados.')
+      // Salvar no Supabase
+      try {
+        await adminDataService.addAvaliacao(avaliacaoCompleta)
+        alert('Prato completamente avaliado! Todos os critérios foram enviados.')
+      } catch (error) {
+        console.error('Erro ao salvar avaliação:', error)
+        alert('Erro ao salvar avaliação. Tente novamente.')
+      }
     } else {
       alert(`Critério "${criterio.nome}" enviado com sucesso!`)
     }
