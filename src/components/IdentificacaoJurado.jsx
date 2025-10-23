@@ -1,20 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { User } from 'lucide-react'
+import adminDataService from '../services/AdminDataService.js'
 
 const IdentificacaoJurado = ({ onNext }) => {
   const [juradoSelecionado, setJuradoSelecionado] = useState('')
   const [errors, setErrors] = useState({})
+  const [jurados, setJurados] = useState([])
 
-  const juradosFixos = [
-    { id: 1, nome: 'Ana Paula' },
-    { id: 2, nome: 'Bruno Silva' },
-    { id: 3, nome: 'Carla Mendes' },
-    { id: 4, nome: 'Diego Rocha' },
-    { id: 5, nome: 'Fernanda Alves' }
-  ]
+  useEffect(() => {
+    // Carregar jurados do AdminDataService
+    const juradosCarregados = adminDataService.getJurados()
+    setJurados(juradosCarregados)
+  }, [])
 
   const handleJuradoChange = (value) => {
     setJuradoSelecionado(value)
@@ -42,7 +42,7 @@ const IdentificacaoJurado = ({ onNext }) => {
     }
 
     // Encontrar dados completos do jurado
-    const juradoCompleto = juradosFixos.find(j => j.nome === juradoSelecionado)
+    const juradoCompleto = jurados.find(j => j.nome === juradoSelecionado)
     
     const dadosJurado = {
       id: juradoCompleto.id,
@@ -95,7 +95,7 @@ const IdentificacaoJurado = ({ onNext }) => {
                       <SelectValue placeholder="Escolha seu nome da lista" />
                     </SelectTrigger>
                     <SelectContent>
-                      {juradosFixos.map((jurado) => (
+                      {jurados.map((jurado) => (
                         <SelectItem key={jurado.id} value={jurado.nome}>
                           {jurado.nome}
                         </SelectItem>
