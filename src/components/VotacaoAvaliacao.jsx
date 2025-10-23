@@ -1,293 +1,443 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Textarea } from '@/components/ui/textarea.jsx'
-import { ArrowLeft, Star, Clock, Users, ChefHat, Send } from 'lucide-react'
+import { ArrowLeft, Star, Send, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react'
+import dataManager from '../services/DataManager.js'
 
 const VotacaoAvaliacao = ({ dadosJurado, pratoSelecionado, onNext, onBack }) => {
   const [avaliacao, setAvaliacao] = useState({
-    limpeza: 0,
-    ambiente: 0,
-    atendimento: 0,
-    qualidadeGeral: 0,
-    receitaParticipante: 0,
-    observacoes: ''
+    originalidade: 0,
+    receita: 0,
+    apresentacao: 0,
+    harmonia: 0,
+    sabor: 0,
+    adequacao: 0
   })
 
+  const [criteriosEnviados, setCriteriosEnviados] = useState({})
   const [hoveredCriteria, setHoveredCriteria] = useState(null)
   const [hoveredStar, setHoveredStar] = useState(null)
+  const [mostrarReceita, setMostrarReceita] = useState(false)
 
   const criterios = [
     {
-      key: 'limpeza',
-      nome: 'Limpeza',
-      descricao: 'Higiene do ambiente, utensílios e apresentação geral',
-      icon: '🧽',
-      color: 'blue'
+      key: 'originalidade',
+      nome: 'Originalidade',
+      descricao: 'Criatividade e inovação na preparação do prato',
+      icon: '💡',
+      color: 'purple',
+      peso: 2
     },
     {
-      key: 'ambiente',
-      nome: 'Ambiente',
-      descricao: 'Decoração, conforto e atmosfera do estabelecimento',
-      icon: '🏪',
-      color: 'green'
+      key: 'receita',
+      nome: 'Receita (execução e produtos)',
+      descricao: 'Qualidade da execução e dos ingredientes utilizados',
+      icon: '📋',
+      color: 'blue',
+      peso: 2
     },
     {
-      key: 'atendimento',
-      nome: 'Atendimento',
-      descricao: 'Cordialidade, agilidade e qualidade do serviço',
-      icon: '👥',
-      color: 'purple'
+      key: 'apresentacao',
+      nome: 'Apresentação',
+      descricao: 'Visual, organização e disposição do prato',
+      icon: '🎨',
+      color: 'green',
+      peso: 1
     },
     {
-      key: 'qualidadeGeral',
-      nome: 'Qualidade Geral do Bufê',
-      descricao: 'Variedade, frescor e qualidade dos pratos oferecidos',
+      key: 'harmonia',
+      nome: 'Harmonia do prato',
+      descricao: 'Equilíbrio entre sabores, texturas e elementos',
+      icon: '⚖️',
+      color: 'yellow',
+      peso: 2
+    },
+    {
+      key: 'sabor',
+      nome: 'Sabor',
+      descricao: 'Qualidade gustativa e palatabilidade do prato',
+      icon: '👅',
+      color: 'red',
+      peso: 3
+    },
+    {
+      key: 'adequacao',
+      nome: 'Adequação do prato ao serviço a quilo',
+      descricao: 'Praticidade e adequação ao formato de self-service',
       icon: '🍽️',
-      color: 'orange'
-    },
-    {
-      key: 'receitaParticipante',
-      nome: 'Receita Participante',
-      descricao: 'Sabor, apresentação e originalidade do prato concorrente',
-      icon: '⭐',
-      color: 'red'
+      color: 'orange',
+      peso: 3
     }
   ]
 
-  const handleStarClick = (criterio, nota) => {
-    setAvaliacao(prev => ({
-      ...prev,
-      [criterio]: nota
-    }))
+  // Receita fictícia para demonstração
+  const receita = {
+    ingredientes: [
+      "1 frango inteiro (1,5kg)",
+      "4 batatas médias",
+      "2 cebolas grandes", 
+      "3 dentes de alho",
+      "Ervas finas (tomilho, alecrim)",
+      "Azeite extra virgem",
+      "Sal e pimenta do reino"
+    ],
+    preparo: [
+      "Tempere o frango com sal, pimenta e ervas finas",
+      "Deixe marinar por 2 horas",
+      "Corte as batatas e cebolas em pedaços médios",
+      "Preaqueça o forno a 200°C",
+      "Coloque o frango em assadeira com as batatas ao redor",
+      "Regue com azeite e leve ao forno por 45 minutos",
+      "Vire o frango na metade do tempo",
+      "Sirva quente com as batatas douradas"
+    ]
   }
 
-  const handleSubmit = () => {
-    // Verificar se todos os critérios foram avaliados
-    const criteriosPreenchidos = criterios.every(criterio => avaliacao[criterio.key] > 0)
-    
-    if (!criteriosPreenchidos) {
-      alert('Por favor, avalie todos os critérios antes de continuar.')
-      return
+  useEffect(() => {
+    // Carregar avaliações já salvas para este prato e jurado
+    if (dadosJurado?.id && pratoSelecionado?.id) {
+      console.log("Salvando voto para jurado ID:", dadosJurado.id);
+    const chaveVotacoes = `votacoes_jurado_${dadosJurado.id}`
+      const votacoesSalvas = localStorage.getItem(chaveVotacoes)
+      
+      if (votacoesSalvas) {
+        const votacoes = JSON.parse(votacoesSalvas)
+        const avaliacaoPrato = votacoes[pratoSelecionado.id]
+        
+        if (avaliacaoPrato) {
+          // Carregar avaliações já feitas
+          setAvaliacao(prev => ({
+            ...prev,
+            ...avaliacaoPrato
+          }))
+          
+          // Marcar critérios já enviados
+          const enviados = {}
+          criterios.forEach(criterio => {
+            if (avaliacaoPrato[criterio.key] && avaliacaoPrato[criterio.key] > 0) {
+              enviados[criterio.key] = true
+            }
+          })
+          setCriteriosEnviados(enviados)
+        }
+      }
     }
+  }, [dadosJurado, pratoSelecionado])
 
-    // Calcular média
-    const soma = criterios.reduce((acc, criterio) => acc + avaliacao[criterio.key], 0)
-    const media = (soma / criterios.length).toFixed(1)
-
-    const avaliacaoCompleta = {
-      ...avaliacao,
-      prato: pratoSelecionado,
-      jurado: dadosJurado,
-      media: parseFloat(media),
-      dataAvaliacao: new Date().toISOString()
+  const handleStarClick = (criterio, nota) => {
+    // Só permite alterar se o critério ainda não foi enviado
+    if (!criteriosEnviados[criterio]) {
+      setAvaliacao(prev => ({
+        ...prev,
+        [criterio]: nota
+      }))
     }
+  }
 
-    // Salvar no localStorage
-    const avaliacoes = JSON.parse(localStorage.getItem('avaliacoes') || '[]')
-    avaliacoes.push(avaliacaoCompleta)
-    localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes))
+  const handleStarHover = (criterio, nota) => {
+    // Só permite hover se não foi enviado
+    if (!criteriosEnviados[criterio]) {
+      setHoveredCriteria(criterio)
+      setHoveredStar(nota)
+    }
+  }
 
-    onNext(avaliacaoCompleta)
+  const handleStarLeave = () => {
+    setHoveredCriteria(null)
+    setHoveredStar(null)
   }
 
   const renderStars = (criterio) => {
+    const currentValue = avaliacao[criterio.key]
+    const isEnviado = criteriosEnviados[criterio.key]
+    
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-1 justify-center sm:justify-start">
         {[1, 2, 3, 4, 5].map((star) => {
-          const isActive = star <= avaliacao[criterio.key]
+          const isActive = star <= currentValue
           const isHovered = hoveredCriteria === criterio.key && star <= hoveredStar
           
           return (
-            <button
+            <Star
               key={star}
-              type="button"
-              className={`w-8 h-8 transition-all duration-200 ${
-                isActive || isHovered
-                  ? 'text-yellow-400 scale-110'
-                  : 'text-gray-300 hover:text-yellow-200'
+              className={`mobile-star transition-all duration-200 ${
+                isEnviado 
+                  ? 'cursor-not-allowed opacity-60' 
+                  : 'cursor-pointer'
+              } ${
+                isActive || isHovered 
+                  ? 'fill-yellow-400 text-yellow-400' 
+                  : 'text-gray-300 hover:text-yellow-300'
               }`}
               onClick={() => handleStarClick(criterio.key, star)}
-              onMouseEnter={() => {
-                setHoveredCriteria(criterio.key)
-                setHoveredStar(star)
-              }}
-              onMouseLeave={() => {
-                setHoveredCriteria(null)
-                setHoveredStar(null)
-              }}
-            >
-              <Star className="w-full h-full fill-current" />
-            </button>
+              onMouseEnter={() => handleStarHover(criterio.key, star)}
+              onMouseLeave={handleStarLeave}
+            />
           )
         })}
-        <span className="ml-2 text-sm font-medium text-gray-600">
-          {avaliacao[criterio.key] > 0 ? `${avaliacao[criterio.key]}/5` : 'Não avaliado'}
-        </span>
       </div>
     )
   }
 
-  const getMediaColor = () => {
-    const soma = criterios.reduce((acc, criterio) => acc + avaliacao[criterio.key], 0)
-    const media = soma / criterios.length
-    
-    if (media >= 4.5) return 'text-green-600'
-    if (media >= 3.5) return 'text-yellow-600'
-    if (media >= 2.5) return 'text-orange-600'
-    return 'text-red-600'
+  const handleEnviarCriterio = (criterio) => {
+    if (avaliacao[criterio.key] === 0) {
+      alert('Por favor, selecione uma nota antes de enviar.')
+      return
+    }
+
+    // Salvar avaliação individual no localStorage
+    console.log("Salvando voto para jurado ID:", dadosJurado.id);
+    const chaveVotacoes = `votacoes_jurado_${dadosJurado.id}`
+    const votacoesSalvas = localStorage.getItem(chaveVotacoes) || '{}'
+    const votacoes = JSON.parse(votacoesSalvas)
+
+    // Inicializar avaliação do prato se não existir
+    if (!votacoes[pratoSelecionado.id]) {
+      votacoes[pratoSelecionado.id] = {
+        originalidade: 0,
+        receita: 0,
+        apresentacao: 0,
+        harmonia: 0,
+        sabor: 0,
+        adequacao: 0,
+        prato: pratoSelecionado,
+        jurado: dadosJurado,
+        dataInicio: new Date().toISOString()
+      }
+    }
+
+    // Atualizar critério específico
+    votacoes[pratoSelecionado.id][criterio.key] = avaliacao[criterio.key]
+    votacoes[pratoSelecionado.id].dataUltimaAtualizacao = new Date().toISOString()
+
+    // Verificar se todos os critérios foram preenchidos
+    const todosPreenchidos = criterios.every(c => 
+      votacoes[pratoSelecionado.id][c.key] > 0
+    )
+
+    if (todosPreenchidos) {
+      votacoes[pratoSelecionado.id].completa = true
+      votacoes[pratoSelecionado.id].dataCompleta = new Date().toISOString()
+    }
+
+    localStorage.setItem(chaveVotacoes, JSON.stringify(votacoes))
+
+    // Marcar critério como enviado
+    setCriteriosEnviados(prev => ({
+      ...prev,
+      [criterio.key]: true
+    }))
+
+    // Salvar avaliação completa usando DataManager
+    if (todosPreenchidos) {
+      const avaliacaoCompleta = {
+        prato_id: pratoSelecionado.id,
+        jurado_id: dadosJurado.id,
+        jurado_nome: dadosJurado.nome,
+        originalidade: votacoes[pratoSelecionado.id].originalidade,
+        receita: votacoes[pratoSelecionado.id].receita,
+        apresentacao: votacoes[pratoSelecionado.id].apresentacao,
+        harmonia: votacoes[pratoSelecionado.id].harmonia,
+        sabor: votacoes[pratoSelecionado.id].sabor,
+        adequacao: votacoes[pratoSelecionado.id].adequacao,
+        completa: true
+      }
+
+      // Usar DataManager para sincronização automática
+      dataManager.addAvaliacao(avaliacaoCompleta)
+      
+      alert('Prato completamente avaliado! Todos os critérios foram enviados.')
+    } else {
+      alert(`Critério "${criterio.nome}" enviado com sucesso!`)
+    }
   }
 
-  const calcularMedia = () => {
-    const soma = criterios.reduce((acc, criterio) => acc + avaliacao[criterio.key], 0)
-    const criteriosAvaliados = criterios.filter(criterio => avaliacao[criterio.key] > 0).length
-    
-    if (criteriosAvaliados === 0) return 0
-    return (soma / criterios.length).toFixed(1)
+  const getStatusCriterio = (criterio) => {
+    if (criteriosEnviados[criterio.key]) {
+      return { status: 'enviado', texto: 'Enviado', cor: 'text-green-600' }
+    } else if (avaliacao[criterio.key] > 0) {
+      return { status: 'preenchido', texto: 'Pronto para enviar', cor: 'text-blue-600' }
+    } else {
+      return { status: 'vazio', texto: 'Não avaliado', cor: 'text-gray-500' }
+    }
+  }
+
+  const contarCriteriosEnviados = () => {
+    return Object.keys(criteriosEnviados).length
+  }
+
+  if (!pratoSelecionado) {
+    return <div>Erro: Nenhum prato selecionado</div>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-green-50">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Avaliação do Prato</h1>
-                <p className="text-sm text-gray-600">
-                  Jurado: <span className="font-medium">{dadosJurado?.nome}</span>
-                </p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-green-50 to-yellow-50 mobile-safe">
+      <div className="mobile-container py-4">
+        {/* Header Mobile */}
+        <div className="mobile-header bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Avaliação do Prato</h1>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Jurado: <span className="font-semibold text-orange-600">{dadosJurado?.nome}</span>
+              </p>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Média Atual</div>
-              <div className={`text-2xl font-bold ${getMediaColor()}`}>
-                {calcularMedia()}/5
-              </div>
+            <div className="text-center sm:text-right">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">{contarCriteriosEnviados()} de 6</div>
+              <div className="text-xs sm:text-sm text-gray-600">Critérios Enviados</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Informações do Prato */}
-        <Card className="mb-8 bg-white/90 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-start justify-between">
+        {/* Card do Prato Mobile */}
+        <Card className="mobile-card shadow-lg mb-4">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <img 
+                src={pratoSelecionado.imagem} 
+                alt={pratoSelecionado.nome}
+                className="w-full sm:w-32 h-48 sm:h-32 object-cover rounded-lg shadow-md"
+              />
               <div className="flex-1">
-                <CardTitle className="text-2xl text-gray-800 mb-2">
-                  {pratoSelecionado?.nome}
-                </CardTitle>
-                <p className="text-lg font-medium text-orange-600 mb-3">
-                  {pratoSelecionado?.restaurante}
-                </p>
-                <p className="text-gray-600 mb-4">
-                  {pratoSelecionado?.descricao}
-                </p>
-                <div className="flex items-center gap-6 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {pratoSelecionado?.tempo}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {pratoSelecionado?.porcoes}
-                  </span>
-                  <Badge variant="outline">
-                    {pratoSelecionado?.categoria}
-                  </Badge>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">{pratoSelecionado.nome}</h2>
+                <p className="text-orange-600 font-medium mb-4">{pratoSelecionado.restaurante}</p>
+                
+                {/* Dropdown da Receita Mobile */}
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setMostrarReceita(!mostrarReceita)}
+                    className="mobile-button flex items-center gap-2"
+                  >
+                    Ver Receita
+                    {mostrarReceita ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                  
+                  {mostrarReceita && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold mb-2">Ingredientes:</h4>
+                          <ul className="text-sm space-y-1">
+                            {receita.ingredientes.map((ingrediente, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-orange-500">•</span>
+                                {ingrediente}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">Modo de Preparo:</h4>
+                          <ol className="text-sm space-y-1">
+                            {receita.preparo.map((passo, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-orange-500 font-medium">{index + 1}.</span>
+                                {passo}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-                <div className="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
-                  <img 
-                    src={pratoSelecionado?.imagem} 
-                    alt={pratoSelecionado?.nome}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.parentElement.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center"><svg class="w-16 h-16 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L12.93 12l2.83-2.83a1 1 0 0 1 1.41 1.41L15.34 12l1.83 1.83a1 1 0 0 1-1.41 1.41L12.93 13.41l-1.83 1.83a1 1 0 0 1-1.41-1.41L11.52 12 9.69 10.17a1 1 0 0 1 1.41-1.41L12.93 10.59l1.83-1.83z"/></svg></div>'
-                    }}
-                  />
-                </div>
             </div>
-          </CardHeader>
+          </CardContent>
         </Card>
 
-        {/* Critérios de Avaliação */}
-        <Card className="mb-8 bg-white/90 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+        {/* Critérios de Avaliação Mobile */}
+        <Card className="mobile-card shadow-lg mb-4">
+          <CardHeader className="p-4">
+            <CardTitle className="flex items-center gap-2 text-gray-700 text-lg">
               <Star className="w-5 h-5 text-yellow-500" />
               Critérios de Avaliação
             </CardTitle>
-            <p className="text-sm text-gray-600">
-              Avalie cada critério de 1 a 5 estrelas
-            </p>
+            <p className="text-sm text-gray-600">Avalie e envie cada critério individualmente</p>
           </CardHeader>
-          
-          <CardContent className="space-y-6">
-            {criterios.map((criterio) => (
-              <div key={criterio.key} className="border-b border-gray-100 pb-6 last:border-b-0">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                      <span className="text-xl">{criterio.icon}</span>
-                      {criterio.nome}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {criterio.descricao}
-                    </p>
+          <CardContent className="p-4 space-y-4">
+            {criterios.map((criterio) => {
+              const status = getStatusCriterio(criterio)
+              const isEnviado = criteriosEnviados[criterio.key]
+              
+              return (
+                <div key={criterio.key} className={`border rounded-lg p-4 ${
+                  isEnviado ? 'bg-green-50 border-green-200' : 'border-gray-200'
+                }`}>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl sm:text-2xl">{criterio.icon}</span>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
+                          {criterio.nome}
+                          {isEnviado && <CheckCircle className="w-4 h-4 text-green-600" />}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600">{criterio.descricao}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex flex-col items-center sm:items-start gap-2">
+                        {renderStars(criterio)}
+                        <div className={`text-xs sm:text-sm font-medium ${status.cor} text-center sm:text-left`}>
+                          {status.texto}
+                        </div>
+                      </div>
+                      
+                      {isEnviado ? (
+                        <Button disabled className="mobile-button bg-green-100 text-green-700 cursor-not-allowed">
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Enviado
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => handleEnviarCriterio(criterio)}
+                          disabled={avaliacao[criterio.key] === 0}
+                          className={`mobile-button ${
+                            avaliacao[criterio.key] > 0
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' 
+                              : 'bg-gray-300 cursor-not-allowed'
+                          }`}
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          Enviar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  {renderStars(criterio)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
 
-        {/* Observações */}
-        <Card className="mb-8 bg-white/90 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-800">
-              Observações Adicionais
-            </CardTitle>
-            <p className="text-sm text-gray-600">
-              Comentários opcionais sobre a experiência (opcional)
-            </p>
-          </CardHeader>
-          
-          <CardContent>
-            <Textarea
-              placeholder="Digite suas observações sobre o prato, ambiente, atendimento ou qualquer aspecto relevante..."
-              value={avaliacao.observacoes}
-              onChange={(e) => setAvaliacao(prev => ({ ...prev, observacoes: e.target.value }))}
-              className="min-h-[120px] resize-none"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Botão de Enviar */}
-        <div className="flex justify-center">
-          <Button
-            onClick={handleSubmit}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-            size="lg"
+        {/* Botão de Voltar Mobile */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <Button 
+            onClick={onBack}
+            variant="outline" 
+            className="mobile-button flex items-center gap-2"
           >
-            <Send className="w-5 h-5 mr-2" />
-            Enviar Avaliação
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Seleção
           </Button>
+
+          <div className="text-center sm:text-right">
+            <p className="text-sm text-gray-600 mb-2">
+              {contarCriteriosEnviados() === 6 
+                ? 'Prato completamente avaliado!' 
+                : `${6 - contarCriteriosEnviados()} critérios restantes`
+              }
+            </p>
+            {contarCriteriosEnviados() === 6 && (
+              <Badge className="bg-green-500 text-white">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Avaliação Completa
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
     </div>

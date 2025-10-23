@@ -1,340 +1,387 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { ChefHat, Clock, Users, ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock, Users, CheckCircle, Lock, Trophy, Star, User, CheckCircle2, Clock4 } from 'lucide-react'
+import adminDataService from '../services/AdminDataService.js'
 
-const SelecaoPratos = ({ dadosJurado, onNext, onBack }) => {
-  const [pratoSelecionado, setPratoSelecionado] = useState(null)
-
-  // Dados dos pratos com imagens reais
-  const pratos = [
+const SelecaoPratos = ({ dadosJurado, onNext, onBack, onAvaliarPrato }) => {
+  const [pratos, setPratos] = useState([])
+  const [pratosOriginal] = useState([
     {
       id: 1,
-      nome: "Frango Assado com Batatas",
-      restaurante: "Casa da Feijoada",
-      categoria: "Prato Principal",
-      tempo: "45 min",
-      porcoes: "4-6 pessoas",
-      descricao: "Frango assado dourado com batatas e cebolas caramelizadas, temperado com ervas finas",
-      imagem: "/images/pratos/carne-de-frango-assado-com-batatas-e-cebolas.jpg",
-      status: "Pendente"
+      nome: 'Presunto Artesanal de Frango com Pequi',
+      restaurante: 'Junior Cozinha Brasileira',
+      descricao: 'Presunto artesanal de frango com pequi recheado, empanado em semente de abóbora, acompanhado de musseline de agrião e crispy de casca de maçã',
+      tempo: '90 min',
+      porcoes: '4-6 pessoas',
+      categoria: 'Prato Principal',
+      imagem: '/images/pratos/junior_cozinha_brasileira.png'
     },
     {
       id: 2,
-      nome: "Café da Manhã Inglês Completo",
-      restaurante: "Sabores Internacionais",
-      categoria: "Café da Manhã", 
-      tempo: "30 min",
-      porcoes: "1-2 pessoas",
-      descricao: "Café da manhã tradicional inglês com ovos, bacon, linguiça, feijão e cogumelos",
-      imagem: "/images/pratos/prato-de-pequeno-almoco-ingles.jpg",
-      status: "Pendente"
+      nome: 'Café da Manhã Inglês Completo',
+      restaurante: 'Sabores Internacionais',
+      descricao: 'Café da manhã tradicional inglês com ovos, bacon, linguiça, feijão e cogumelos',
+      tempo: '30 min',
+      porcoes: '1-2 pessoas',
+      categoria: 'Café da Manhã',
+      imagem: '/images/pratos/prato-de-pequeno-almoco-ingles.jpg'
     },
     {
       id: 3,
-      nome: "Salada Caesar com Camarão",
-      restaurante: "Tempero da Bahia",
-      categoria: "Salada",
-      tempo: "20 min", 
-      porcoes: "2-3 pessoas",
-      descricao: "Salada caesar clássica com camarões grelhados, parmesão e croutons artesanais",
-      imagem: "/images/pratos/camarao-caesar-salada-vista-superior.jpg",
-      status: "Avaliado"
+      nome: 'Salada Caesar com Camarão',
+      restaurante: 'Tempero da Bahia',
+      descricao: 'Salada caesar clássica com camarões grelhados, parmesão e croutons artesanais',
+      tempo: '20 min',
+      porcoes: '2-3 pessoas',
+      categoria: 'Salada',
+      imagem: '/images/pratos/camarao-caesar-salada-vista-superior.jpg'
     },
     {
       id: 4,
-      nome: "Sopa Oriental de Ervilha",
-      restaurante: "Pantanal Gourmet",
-      categoria: "Sopa",
-      tempo: "35 min",
-      porcoes: "3-4 pessoas", 
-      descricao: "Sopa oriental cremosa de ervilha com carne e vegetais frescos da estação",
-      imagem: "/images/pratos/sopa-de-ervilha-oriental-deliciosa-antropofaga-com-carne-em-uma-tabela-de-madeira-vista-de-alto-angulo.jpg",
-      status: "Pendente"
+      nome: 'Sopa Oriental de Ervilha',
+      restaurante: 'Pantanal Gourmet',
+      descricao: 'Sopa cremosa de ervilha com temperos orientais e carne desfiada',
+      tempo: '35 min',
+      porcoes: '3-4 pessoas',
+      categoria: 'Sopa',
+      imagem: '/images/pratos/sopa-de-ervilha-oriental-deliciosa-antropofaga-com-carne-em-uma-tabela-de-madeira-vista-de-alto-angulo.jpg'
     },
     {
       id: 5,
-      nome: "Penne com Molho de Tomate",
-      restaurante: "Cozinha do Sertão",
-      categoria: "Massa",
-      tempo: "25 min",
-      porcoes: "2-3 pessoas",
-      descricao: "Macarrão penne al dente com molho de tomate artesanal, carne e queijo parmesão",
-      imagem: "/images/pratos/macarrao-penne-com-molho-de-tomate-carne-e-queijo-ralado.jpg", 
-      status: "Pendente"
+      nome: 'Penne com Molho de Tomate',
+      restaurante: 'Massa & Arte',
+      descricao: 'Macarrão penne al dente com molho de tomate artesanal, carne e queijo parmesão',
+      tempo: '25 min',
+      porcoes: '2-3 pessoas',
+      categoria: 'Massa',
+      imagem: '/images/pratos/macarrao-penne-com-molho-de-tomate-carne-e-queijo-ralado.jpg'
     },
     {
       id: 6,
-      nome: "Salada Caesar Gourmet",
-      restaurante: "Amazônia Autêntica",
-      categoria: "Salada",
-      tempo: "15 min",
-      porcoes: "2 pessoas",
-      descricao: "Salada caesar premium com frango grelhado, tomates frescos e molho especial",
-      imagem: "/images/pratos/salada-caesar-com-tomate-e-pano-em-prato-triangular.jpg",
-      status: "Pendente"
+      nome: 'Salada Caesar Gourmet',
+      restaurante: 'Verde & Sabor',
+      descricao: 'Salada caesar premium com molho especial da casa e parmesão envelhecido',
+      tempo: '15 min',
+      porcoes: '1-2 pessoas',
+      categoria: 'Salada',
+      imagem: '/images/pratos/salada-caesar-com-tomate-e-pano-em-prato-triangular.jpg'
     }
+  ])
+
+  // Carregar pratos do painel administrativo
+  useEffect(() => {
+    try {
+      const pratosAdmin = adminDataService.getPratos()
+      if (pratosAdmin && pratosAdmin.length > 0) {
+        // Usar dados do painel administrativo
+        setPratos(pratosAdmin)
+      } else {
+        // Fallback para dados originais se não houver dados no admin
+        setPratos(pratosOriginal)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar pratos do admin:', error)
+      // Usar dados originais em caso de erro
+      setPratos(pratosOriginal)
+    }
+  }, [])
+
+  const criterios = [
+    'originalidade',
+    'receita', 
+    'apresentacao',
+    'harmonia',
+    'sabor',
+    'adequacao'
   ]
 
-  const handlePratoSelect = (prato) => {
-    setPratoSelecionado(prato)
-  }
-
-  const handleContinuar = () => {
-    if (pratoSelecionado) {
-      onNext(pratoSelecionado)
+  const pratoJaVotado = (pratoId) => {
+    if (!dadosJurado?.id) return false
+    
+    const chaveVotacoes = `votacoes_jurado_${dadosJurado.id}`
+    const votacoesSalvas = localStorage.getItem(chaveVotacoes)
+    
+    if (votacoesSalvas) {
+      const votacoes = JSON.parse(votacoesSalvas)
+      return votacoes[pratoId] && votacoes[pratoId].completa
     }
+    
+    return false
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Avaliado':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'Pendente':
-        return 'bg-orange-100 text-orange-800 border-orange-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+  const contarQuesitosVotados = (pratoId) => {
+    if (!dadosJurado?.id) return 0
+    
+    const chaveVotacoes = `votacoes_jurado_${dadosJurado.id}`
+    const votacoesSalvas = localStorage.getItem(chaveVotacoes)
+    
+    if (votacoesSalvas) {
+      const votacoes = JSON.parse(votacoesSalvas)
+      const votacaoPrato = votacoes[pratoId]
+      
+      if (votacaoPrato) {
+        // Contar critérios que têm nota > 0 (foram avaliados)
+        return criterios.filter(criterio => 
+          votacaoPrato[criterio] && votacaoPrato[criterio] > 0
+        ).length
+      }
     }
+    
+    return 0
   }
 
-  const pratosPendentes = pratos.filter(prato => prato.status === 'Pendente')
-  const pratosAvaliados = pratos.filter(prato => prato.status === 'Avaliado')
+  const todosVotados = () => {
+    return pratos.every(prato => pratoJaVotado(prato.id))
+  }
+
+  const contarPratosAvaliados = () => {
+    return pratos.filter(prato => pratoJaVotado(prato.id)).length
+  }
+
+  const handleAvaliarPrato = (prato) => {
+    onAvaliarPrato(prato)
+  }
+
+  const handleVerRanking = () => {
+    onNext()
+  }
+
+  const pratosAvaliados = contarPratosAvaliados()
+  const totalJurados = 5 // Número fixo de jurados
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-green-50">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Seleção de Pratos</h1>
-                <p className="text-sm text-gray-600">
-                  Jurado: <span className="font-medium">{dadosJurado?.nome}</span> • 
-                  Categoria: <span className="font-medium">{dadosJurado?.categoria}</span>
-                </p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-green-50 to-yellow-50 mobile-safe">
+      <div className="mobile-container py-4 sm:py-6">
+        {/* Header Mobile-Friendly */}
+        <div className="mobile-header bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
+                Seleção de Pratos
+              </h1>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Jurado: <span className="font-semibold text-orange-600">{dadosJurado?.nome}</span>
+              </p>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Progresso da Avaliação</div>
-              <div className="text-lg font-semibold text-orange-600">
-                {pratosAvaliados.length} de {pratos.length} avaliados
-              </div>
+            <div className="text-center sm:text-right">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600">{pratosAvaliados} de {pratos.length}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Pratos Avaliados</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <ChefHat className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800">{pratos.length}</div>
-                  <div className="text-sm text-gray-600">Total de Pratos</div>
-                </div>
-              </div>
-            </CardContent>
+        {/* Estatísticas Mobile */}
+        <div className="mobile-stats mb-6">
+          <Card className="mobile-card p-3 sm:p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{pratos.length}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Total</div>
           </Card>
 
-          <Card className="bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800">{pratosPendentes.length}</div>
-                  <div className="text-sm text-gray-600">Pendentes</div>
-                </div>
-              </div>
-            </CardContent>
+          <Card className="mobile-card p-3 sm:p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Clock4 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{pratos.length - pratosAvaliados}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Pendentes</div>
           </Card>
 
-          <Card className="bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800">{pratosAvaliados.length}</div>
-                  <div className="text-sm text-gray-600">Avaliados</div>
-                </div>
-              </div>
-            </CardContent>
+          <Card className="mobile-card p-3 sm:p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{pratosAvaliados}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Avaliados</div>
+          </Card>
+
+          <Card className="mobile-card p-3 sm:p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-purple-600">{totalJurados}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Jurados</div>
           </Card>
         </div>
 
-        {/* Lista de Pratos */}
-        <div className="space-y-6">
-          {/* Pratos Pendentes */}
-          {pratosPendentes.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-orange-500" />
-                Pratos Pendentes de Avaliação
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pratosPendentes.map((prato) => (
-                  <Card
-                    key={prato.id}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-white/90 backdrop-blur-sm ${
-                      pratoSelecionado?.id === prato.id
-                        ? 'ring-2 ring-orange-500 shadow-lg transform scale-[1.02]'
-                        : 'hover:transform hover:scale-[1.01]'
-                    }`}
-                    onClick={() => handlePratoSelect(prato)}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg text-gray-800 mb-1">
-                            {prato.nome}
-                          </CardTitle>
-                          <p className="text-sm font-medium text-orange-600 mb-2">
-                            {prato.restaurante}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(prato.status)}>
-                          {prato.status}
+        {/* Pratos Pendentes */}
+        <div className="mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Clock4 className="w-5 h-5 text-orange-500" />
+            Pratos Pendentes
+          </h2>
+          
+          <div className="mobile-grid">
+            {pratos.filter(prato => !pratoJaVotado(prato.id)).map(prato => {
+              const quesitosVotados = contarQuesitosVotados(prato.id)
+              const quesitosRestantes = criterios.length - quesitosVotados
+              
+              return (
+                <Card key={prato.id} className="mobile-card shadow-lg hover:shadow-xl transition-all duration-200">
+                  <CardContent className="p-4 sm:p-6 flex flex-col gap-4">
+                    {/* Status e Contador de Quesitos */}
+                    <div className="flex items-start justify-between">
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-200">
+                        Pendente
+                      </Badge>
+                      {quesitosVotados > 0 && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold">
+                          {quesitosVotados}/6 quesitos
                         </Badge>
-                      </div>
-                    </CardHeader>
+                      )}
+                    </div>
                     
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {/* Imagem do Prato */}
-                        <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
-                          <img 
-                            src={prato.imagem} 
-                            alt={prato.nome}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-                            onError={(e) => {
-                              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMjUgNzVIMTc1VjEyNUgxMjVWNzVaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMzUgOTVIMTY1VjEwNUgxMzVWOTVaIiBmaWxsPSIjNkI3MjgwIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNkI3MjgwIiBmb250LXNpemU9IjEyIj5JbWFnZW0gZG8gUHJhdG88L3RleHQ+Cjwvc3ZnPgo='
-                            }}
-                          />
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {prato.descricao}
-                        </p>
-                        
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {prato.tempo}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {prato.porcoes}
-                          </span>
-                        </div>
-                        
-                        <Badge variant="outline" className="text-xs">
-                          {prato.categoria}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Pratos Avaliados */}
-          {pratosAvaliados.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <ChefHat className="w-5 h-5 text-green-500" />
-                Pratos Já Avaliados
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pratosAvaliados.map((prato) => (
-                  <Card
-                    key={prato.id}
-                    className="bg-white/60 backdrop-blur-sm opacity-75"
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg text-gray-600 mb-1">
-                            {prato.nome}
-                          </CardTitle>
-                          <p className="text-sm font-medium text-gray-500 mb-2">
-                            {prato.restaurante}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(prato.status)}>
-                          {prato.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
+                    {/* Imagem do Prato - Maior */}
+                    <div className="w-full h-48 sm:h-56">
+                      <img 
+                        src={prato.imagem} 
+                        alt={prato.nome}
+                        className="w-full h-full object-cover rounded-lg shadow-md"
+                      />
+                    </div>
                     
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {/* Imagem do Prato */}
-                        <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden opacity-75">
-                          <img 
-                            src={prato.imagem} 
-                            alt={prato.nome}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMjUgNzVIMTc1VjEyNUgxMjVWNzVaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMzUgOTVIMTY1VjEwNUgxMzVWOTVaIiBmaWxsPSIjNkI3MjgwIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNkI3MjgwIiBmb250LXNpemU9IjEyIj5JbWFnZW0gZG8gUHJhdG88L3RleHQ+Cjwvc3ZnPgo='
-                            }}
-                          />
+                    {/* Informações do Prato */}
+                    <div>
+                      <h3 className="font-bold text-lg sm:text-xl text-gray-800 mb-2">{prato.nome}</h3>
+                      <p className="text-orange-600 font-medium text-sm sm:text-base mb-3">{prato.restaurante}</p>
+                      
+                      {/* Contador de Quesitos em Destaque */}
+                      {quesitosVotados > 0 ? (
+                        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-l-4 border-blue-400">
+                          <div className="text-center mb-2">
+                            <div className="text-2xl font-bold text-blue-600">{quesitosVotados}/6</div>
+                            <div className="text-sm text-blue-800 font-medium">Quesitos Votados</div>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <div className="flex items-center gap-2 text-green-700">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span className="font-medium">Enviados: {quesitosVotados}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-orange-700">
+                              <Clock4 className="w-4 h-4" />
+                              <span className="font-medium">Faltam: {quesitosRestantes}</span>
+                            </div>
+                          </div>
                         </div>
-                        
-                        <p className="text-sm text-gray-500 line-clamp-2">
-                          {prato.descricao}
-                        </p>
-                        
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {prato.tempo}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {prato.porcoes}
-                          </span>
+                      ) : (
+                        <div className="mb-4 p-4 bg-gray-50 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-gray-400">0/6</div>
+                          <div className="text-sm text-gray-600">Nenhum quesito votado</div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+                      )}
+                      
+                      {/* Informações Adicionais - Ocultas conforme solicitado */}
+                    </div>
+                    
+                    {/* Botão de Ação */}
+                    <Button 
+                      onClick={() => handleAvaliarPrato(prato)}
+                      className="mobile-button w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold"
+                    >
+                      {quesitosVotados > 0 ? 'Continuar Avaliação' : 'Avaliar Prato'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
         </div>
 
-        {/* Botão de Continuar */}
-        {pratoSelecionado && (
-          <div className="fixed bottom-6 right-6">
-            <Button
-              onClick={handleContinuar}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-            >
-              Avaliar Prato
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+        {/* Pratos Já Avaliados */}
+        {pratosAvaliados > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              Pratos Já Avaliados
+            </h2>
+            
+            <div className="mobile-grid">
+              {pratos.filter(prato => pratoJaVotado(prato.id)).map(prato => (
+                <Card key={prato.id} className="mobile-card shadow-md opacity-75">
+                  <CardContent className="p-4 sm:p-6 flex flex-col gap-4">
+                    {/* Status Completo */}
+                    <div className="flex items-start justify-between">
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-200">
+                        Avaliado
+                      </Badge>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-semibold">
+                        6/6 quesitos
+                      </Badge>
+                    </div>
+                    
+                    {/* Imagem do Prato */}
+                    <div className="w-full h-48 sm:h-56">
+                      <img 
+                        src={prato.imagem} 
+                        alt={prato.nome}
+                        className="w-full h-full object-cover rounded-lg shadow-md"
+                      />
+                    </div>
+                    
+                    {/* Informações do Prato */}
+                    <div>
+                      <h3 className="font-bold text-lg sm:text-xl text-gray-800 mb-2">{prato.nome}</h3>
+                      <p className="text-orange-600 font-medium text-sm sm:text-base mb-3">{prato.restaurante}</p>
+                      
+                      {/* Status Completo em Destaque */}
+                      <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-l-4 border-green-400">
+                        <div className="text-center mb-2">
+                          <div className="text-2xl font-bold text-green-600">6/6</div>
+                          <div className="text-sm text-green-800 font-medium">Avaliação Completa</div>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-sm text-green-700">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="font-medium">Todos os quesitos enviados</span>
+                        </div>
+                      </div>
+                      
+                      {/* Informações Adicionais - Ocultas conforme solicitado */}
+                    </div>
+                    
+                    {/* Status Bloqueado */}
+                    <div className="flex items-center gap-2 text-sm text-gray-600 p-3 bg-gray-50 rounded-lg">
+                      <Lock className="w-4 h-4" />
+                      <span>Avaliação finalizada - não pode ser alterada</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Botão Ver Ranking */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <Button 
+            onClick={onBack}
+            variant="outline" 
+            className="mobile-button flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Button>
+          
+          {todosVotados() ? (
+            <Button 
+              onClick={handleVerRanking}
+              className="mobile-button bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold flex items-center gap-2"
+            >
+              <Trophy className="w-4 h-4" />
+              Ver Ranking Final
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-yellow-800 text-sm font-medium">
+                Avalie todos os pratos para ver o ranking final
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
