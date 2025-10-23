@@ -410,6 +410,86 @@ class AdminDataService {
       }
     }
   }
+
+  // RECEITAS
+  async getReceitas() {
+    try {
+      const { data, error } = await supabase
+        .from('receitas')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Erro ao buscar receitas:', error)
+        return []
+      }
+      
+      return data || []
+    } catch (error) {
+      console.error('Erro ao carregar receitas:', error)
+      return []
+    }
+  }
+
+  async addReceita(receitaData) {
+    try {
+      const { data, error } = await supabase
+        .from('receitas')
+        .insert([receitaData])
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Erro ao adicionar receita:', error)
+        return null
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Erro ao adicionar receita:', error)
+      return null
+    }
+  }
+
+  async updateReceita(id, receitaData) {
+    try {
+      const { data, error } = await supabase
+        .from('receitas')
+        .update(receitaData)
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (error) {
+        console.error('Erro ao atualizar receita:', error)
+        return null
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Erro ao atualizar receita:', error)
+      return null
+    }
+  }
+
+  async deleteReceita(id) {
+    try {
+      const { error } = await supabase
+        .from('receitas')
+        .delete()
+        .eq('id', id)
+      
+      if (error) {
+        console.error('Erro ao deletar receita:', error)
+        return false
+      }
+      
+      return true
+    } catch (error) {
+      console.error('Erro ao deletar receita:', error)
+      return false
+    }
+  }
 }
 
 export default new AdminDataService()

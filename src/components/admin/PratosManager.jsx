@@ -75,9 +75,9 @@ const PratosManager = ({ onDataChange }) => {
     filterPratos()
   }, [pratos, searchTerm, categoryFilter])
 
-  const loadPratos = () => {
+  const loadPratos = async () => {
     try {
-      const pratosData = adminDataService.getPratos()
+      const pratosData = await adminDataService.getPratos()
       setPratos(pratosData)
     } catch (error) {
       setError('Erro ao carregar pratos')
@@ -159,7 +159,13 @@ const PratosManager = ({ onDataChange }) => {
     }
 
     try {
-      const base64 = await adminDataService.imageToBase64(file)
+      // Converter para base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
       setFormData(prev => ({
         ...prev,
         imagem: base64
@@ -178,8 +184,10 @@ const PratosManager = ({ onDataChange }) => {
     setSuccess('')
 
     try {
-      // Validar dados
-      adminDataService.validatePratoData(formData)
+      // Validar dados obrigatórios
+      if (!formData.nome || !formData.restaurante || !formData.descricao) {
+        throw new Error('Nome, restaurante e descrição são obrigatórios')
+      }
 
       if (editingPrato) {
         // Atualizar prato existente

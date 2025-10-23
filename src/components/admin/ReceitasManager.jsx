@@ -46,12 +46,19 @@ const ReceitasManager = ({ onDataChange }) => {
     filterPratos()
   }, [pratos, searchTerm])
 
-  const loadData = () => {
+  const loadData = async () => {
     try {
-      const pratosData = adminDataService.getPratos()
-      const receitasData = adminDataService.getReceitas()
+      const pratosData = await adminDataService.getPratos()
+      const receitasData = await adminDataService.getReceitas()
+      
       setPratos(pratosData)
-      setReceitas(receitasData)
+      
+      // Organizar receitas por prato_id
+      const receitasMap = {}
+      receitasData.forEach(receita => {
+        receitasMap[receita.prato_id] = receita
+      })
+      setReceitas(receitasMap)
     } catch (error) {
       setError('Erro ao carregar dados')
       console.error(error)

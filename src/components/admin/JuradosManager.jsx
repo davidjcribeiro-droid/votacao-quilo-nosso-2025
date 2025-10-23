@@ -51,9 +51,9 @@ const JuradosManager = ({ onDataChange }) => {
     filterJurados()
   }, [jurados, searchTerm])
 
-  const loadJurados = () => {
+  const loadJurados = async () => {
     try {
-      const juradosData = adminDataService.getJurados()
+      const juradosData = await adminDataService.getJurados()
       setJurados(juradosData)
     } catch (error) {
       setError('Erro ao carregar jurados')
@@ -118,11 +118,13 @@ const JuradosManager = ({ onDataChange }) => {
     setSuccess('')
 
     try {
-      // Validar dados
-      adminDataService.validateJuradoData(formData)
+      // Validar dados obrigatórios
+      if (!formData.nome || !formData.email || !formData.especialidade) {
+        throw new Error('Nome, email e especialidade são obrigatórios')
+      }
 
       // Verificar email duplicado
-      const existingJurados = adminDataService.getJurados()
+      const existingJurados = await adminDataService.getJurados()
       const emailExists = existingJurados.some(j => 
         j.email === formData.email && 
         (!editingJurado || j.id !== editingJurado.id)
